@@ -1,6 +1,6 @@
 # Java-Redis: A Modular, RESP-Compliant In-Memory Key-Value Store
 
-A high-performance, multi-threaded, in-memory key-value database built from scratch in Java SE. This database complies with the Redis Serialization Protocol (RESP2), supports key expiry (TTL) with dual cleanup strategies, and includes a Work-in-Progress (WIP) Append-Only File (AOF) persistence layer for crash recovery.
+A high-performance, multi-threaded, in-memory key-value database built from scratch in Java SE. This database complies with the Redis Serialization Protocol (RESP2), supports key expiry (TTL) with dual cleanup strategies, and includes an Append-Only File (AOF) persistence layer for crash recovery.
 
 ---
 
@@ -12,12 +12,12 @@ A high-performance, multi-threaded, in-memory key-value database built from scra
     *   Integers (`:10\r\n`)
     *   Bulk Strings (`$5\r\nhello\r\n`)
     *   Arrays (`*2\r\n...`)
-*   **Multi-Threaded Server Loop**: Utilizes Java's NIO-based socket handling and a `CachedThreadPool` to manage hundreds of concurrent client connections with minimal latency.
+*   **Multi-Threaded Server Loop**: Utilizes Java's socket handling and a `CachedThreadPool` to manage hundreds of concurrent client connections with minimal latency.
 *   **Thread-Safe Engine**: Backed by `ConcurrentHashMap` to ensure high-throughput, lock-free concurrency.
 *   **Key Expiry & TTL**:
     *   **Passive (Lazy) Expiry**: Removes expired keys on-the-fly during read requests to avoid serving stale data.
     *   **Active Expiry**: Runs a background daemon thread every 1 second to sweep and clean expired keys, preventing memory leaks.
-*   **AOF (Append-Only File) Persistence [WIP]**: Logs state-mutating commands to disk and replays them on startup to recover data.
+*   **AOF (Append-Only File) Persistence**: Logs state-mutating commands to disk and replays them on startup to recover data.
 *   **Docker Integration**: Easily testable using standard `redis-cli` tools.
 
 ---
@@ -32,9 +32,9 @@ java-redis/
 ├── RedisServer.java    # Networking layer: handles multi-threaded TCP sockets
 ├── RespParser.java     # Protocol layer: contains the RESP parser and serializer
 ├── Database.java       # Database engine: houses thread-safe store and command router
-├── Aof.java            # Persistence layer [WIP]: handles AOF logging and data recovery
+├── Aof.java            # Persistence layer: handles AOF logging and data recovery
 ├── run.bat             # Build script: compiles and runs the server on Windows
-└── start.sh            # Docker script: connects redis-cli to the Java server
+└── start.bat           # Connection script: launches redis-cli via Docker CLI on Windows
 ```
 
 ---
@@ -64,10 +64,10 @@ run.bat
 ```
 
 ### 2. Connect and Test
-Use Docker to launch a temporary container running `redis-cli` pointing to your local Java server:
+Use the included `start.bat` script to connect with `redis-cli` using Docker:
 
-```bash
-docker run -it --rm redis redis-cli -h host.docker.internal -p 6379
+```cmd
+start.bat
 ```
 
 Once connected, run commands:
@@ -84,7 +84,7 @@ host.docker.internal:6379> GET name
 
 ---
 
-## 💾 Persistence & Recovery [WIP]
+## 💾 Persistence & Recovery
 
 When write operations occur, they are recorded to `appendonly.aof` in RESP format. If the server is stopped (`Ctrl + C`) and restarted:
 
