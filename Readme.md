@@ -3,7 +3,59 @@
 A high-performance, multi-threaded, in-memory key-value database built from scratch in Java SE. This database complies with the Redis Serialization Protocol (RESP2), supports key expiry (TTL) with dual cleanup strategies, and includes an Append-Only File (AOF) persistence layer for crash recovery.
 
 ---
+##   Overall System Architecture
 
+Before looking at the parser code, let's look at the lifecycle of a request in our server. 
+
+### 📡 The Runtime Context Flow
+
+```
+                      +-----------------------------+
+                      |         TCP Client          |
+                      +-----------------------------+
+                           │                   ▲
+    1. Raw RESP Command    │                   │ 6. Serialized RESP Response
+    (e.g., *2\r\n$4\r\n...)│                   │ (e.g., +PONG\r\n)
+                           ▼                   │
+                      +-----------------------------+
+                      |      Network Socket         |
+                      +-----------------------------+
+                           │                   ▲
+                           ▼                   │
+            +------------------------------+   │
+            |     BufferedInputStream      |   │
+            +------------------------------+   │
+                           │                   │
+                           ▼                   │
+            +------------------------------+   │
+            |  RespParser.RespReader       |   │
+            +------------------------------+   │
+                           │                   │
+                           ▼                   │
+            +------------------------------+   │
+            |  RespValue (Type.ARRAY)      |   │
+            +------------------------------+   │
+                           │                   │
+                           ▼                   │
+            +------------------------------+   │
+            |       Database Engine        |   │
+            +------------------------------+   │
+                           │                   │
+                           ▼                   │
+            +------------------------------+   │
+            |  RespValue (Type.SIMPLE_STR) ────┘
+            +------------------------------+
+```
+
+### How Execution Flows at Runtime:
+1. **Network Layer**: A client (like `redis-cli`) connects to our server on port `6379`. The Operating System's TCP stack establishes a connection, represented in Java as a `Socket`.
+2. **Buffering**: The `Socket` gives us an `InputStream` (raw bytes). We wrap it in a `BufferedInputStream` to prevent making expensive system calls for every single byte read.
+3. **Parsing**: The `RespReader` processes the stream byte-by-byte. It reads the prefix (`*`, `$`, `:`, etc.), determines the type, parses the payload, and produces a structured `RespValue` object.
+4. **Routing**: The `RedisServer` extracts the command name and arguments from the `RespValue` array and routes them to the `Database` engine.
+5. **Execution**: The `Database` runs the command against a thread-safe `ConcurrentHashMap` store and returns a response `RespValue` object (e.g., `+OK\r\n`).
+6. **Serialization**: The response `RespValue` is serialized back to a raw byte array (`byte[]`) and written directly to the socket's `OutputStream`.
+
+---
 ## 🚀 Features
 
 *   **RESP2 Protocol Support**: Completely parses and serializes core RESP types:

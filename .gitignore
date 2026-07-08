@@ -1,3 +1,5 @@
 docs/
 *.class
 .env
+.gitignore
+bin/
