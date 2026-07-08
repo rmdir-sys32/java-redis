@@ -1,0 +1,3 @@
+@echo off
+echo Connecting to your local Redis clone via Docker CLI...
+docker run -it --rm redis redis-cli -h host.docker.internal -p 6379

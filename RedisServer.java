@@ -13,10 +13,10 @@ public class RedisServer {
     private final ExecutorService threadPool;
     private final Database db;
 
-    public RedisServer(int port) {
+    public RedisServer(int port, Database db) {
         this.port = port;
         this.threadPool = Executors.newCachedThreadPool();
-        this.db = new Database();
+        this.db = db;
     }
 
     public void start() {
